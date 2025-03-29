@@ -1,11 +1,10 @@
-import type { FileType } from "@/file_type";
-import type { PageData } from "@/page";
+import type { UploadData } from "@/types";
 
-export async function uploadDataToGoogleDrive(token: string, data: PageData, fileType: FileType): Promise<string> {
+export async function uploadDataToGoogleDrive(token: string, data: UploadData): Promise<string> {
   const metadata = {
-    name: `${data.title || "untitled page"}.${fileType.fileExtension}`,
-    mimeType: fileType.mimeType,
-    description: `Captured from ${data.url} using Clipoline extension`,
+    name: `${data.pageData.title || "untitled page"}.${data.fileExtension}`,
+    mimeType: data.mimeType,
+    description: `Captured from ${data.pageData.url} using Clipoline extension`,
   };
 
   const requestBody = new FormData();
@@ -13,7 +12,7 @@ export async function uploadDataToGoogleDrive(token: string, data: PageData, fil
     "metadata",
     new Blob([JSON.stringify(metadata)], { type: "application/json" }),
   );
-  requestBody.append("file", new Blob([data.content], { type: fileType.mimeType }));
+  requestBody.append("file", data.data);
 
   const response = await fetch(
     "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",

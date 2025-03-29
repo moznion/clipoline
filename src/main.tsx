@@ -1,8 +1,9 @@
+import { extractPage as extractPageContent } from "@/page_extractor";
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import "@/styles.scss";
-import { uploadDataToGoogleDrive } from "@/google_drive";
-import type { PageData } from "@/page";
+import { uploadDataToGoogleDrive as uploadToGoogleDrive } from "@/google_drive";
+import type { PageData, UploadData } from "@/types";
 
 interface AuthToken {
   token: string;
@@ -10,60 +11,21 @@ interface AuthToken {
 }
 
 const App: React.FC = () => {
-  const [pageData, setPageData] = useState<PageData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadSuccess, setUploadSuccess] = useState<boolean>(false);
   const [authToken, setAuthToken] = useState<AuthToken | null>(null);
 
-  // Function to extract page content
-  const extractPageContent = (): Promise<PageData | null> => {
-    return new Promise((resolve, reject) => {
-      setError(null);
-      setUploadSuccess(false);
+  const extractPageContentAction = async (): Promise<PageData | null> => {
+    setError(null);
+    setUploadSuccess(false);
 
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs && tabs.length > 0) {
-          const activeTab = tabs[0];
-          if (activeTab && activeTab.id !== undefined) {
-            chrome.scripting.executeScript(
-              {
-                target: { tabId: activeTab.id },
-                func: () => {
-                  return {
-                    title: document.title,
-                    url: window.location.href,
-                    content: document.body.textContent || "",
-                    html: document.documentElement.outerHTML,
-                  };
-                },
-              },
-              (results) => {
-                if (chrome.runtime.lastError) {
-                  const errorMsg = `Error: ${chrome.runtime.lastError.message}`;
-                  setError(errorMsg);
-                  reject(new Error(errorMsg));
-                } else if (results?.[0]) {
-                  const data = results[0].result as PageData;
-                  setPageData(data);
-                  resolve(data);
-                } else {
-                  reject(new Error("No results returned"));
-                }
-              },
-            );
-          } else {
-            const errorMsg = "No active tab ID found";
-            setError(errorMsg);
-            reject(new Error(errorMsg));
-          }
-        } else {
-          const errorMsg = "No active tabs found";
-          setError(errorMsg);
-          reject(new Error(errorMsg));
-        }
-      });
-    });
+    try {
+      return await extractPageContent();
+    } catch (err) {
+      setError(err as string);
+      throw new Error(err as string);
+    }
   };
 
   const authenticate = (): Promise<string> => {
@@ -99,17 +61,14 @@ const App: React.FC = () => {
     });
   };
 
-  const uploadToGoogleDrive = async (data: PageData) => {
+  const uploadToGoogleDriveAction = async (data: UploadData) => {
     setIsUploading(true);
     setError(null);
     setUploadSuccess(false);
 
     try {
       const token = await authenticate();
-      const result = await uploadDataToGoogleDrive(token, data, {
-        mimeType: "text/html",
-        fileExtension: "html",
-      });
+      const result = await uploadToGoogleDrive(token, data);
       setUploadSuccess(true);
       return result;
     } catch (err) {
@@ -121,9 +80,15 @@ const App: React.FC = () => {
   };
 
   const extractAndUpload = async () => {
-    const data = await extractPageContent();
-    if (data) {
-      await uploadToGoogleDrive(data);
+    const pageData = await extractPageContentAction();
+    if (pageData) {
+      const data = {
+        pageData,
+        data: new Blob([pageData.content], { type: "text/plain" }), // TODO
+        mimeType: "text/plain",
+        fileExtension: "txt",
+      };
+      await uploadToGoogleDriveAction(data);
     }
   };
 
@@ -157,21 +122,6 @@ const App: React.FC = () => {
       {uploadSuccess && (
         <div className="success">
           <p>Successfully uploaded to Google Drive!</p>
-        </div>
-      )}
-
-      {pageData && (
-        <div className="content-preview">
-          <h2>Page Content Preview:</h2>
-          <p>
-            <strong>Title:</strong> {pageData.title}
-          </p>
-          <p>
-            <strong>URL:</strong> {pageData.url}
-          </p>
-          <p>
-            <strong>Content:</strong> {pageData.content.substring(0, 100)}...
-          </p>
         </div>
       )}
     </div>
