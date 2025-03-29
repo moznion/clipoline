@@ -1,10 +1,12 @@
 {
-  "name": "Hello Extensions",
-  "description": "Base Level Extension",
+  "name": "Clipone",
+  "description": "A Chrome extension that captures web pages in various formats and sends them to different destinations.",
   "version": "1.0",
   "manifest_version": 3,
   "action": {
-    "default_popup": "hello.html",
+    "default_popup": "index.html",
     "default_icon": "hello_extensions.png"
-  }
+  },
+  "permissions": [],
+  "host_permissions": []
 }
