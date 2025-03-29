@@ -1,16 +1,12 @@
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import "@/styles.scss";
-
-interface PageData {
-  title: string;
-  url: string;
-  content: string;
-  html: string;
-}
+import { uploadDataToGoogleDrive } from "@/google_drive";
+import type { PageData } from "@/page";
 
 interface AuthToken {
   token: string;
+  softExpiration: number;
 }
 
 const App: React.FC = () => {
@@ -25,7 +21,7 @@ const App: React.FC = () => {
     return new Promise((resolve, reject) => {
       setError(null);
       setUploadSuccess(false);
-      
+
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs && tabs.length > 0) {
           const activeTab = tabs[0];
@@ -38,7 +34,7 @@ const App: React.FC = () => {
                     title: document.title,
                     url: window.location.href,
                     content: document.body.textContent || "",
-                    html: document.documentElement.outerHTML
+                    html: document.documentElement.outerHTML,
                   };
                 },
               },
@@ -47,7 +43,7 @@ const App: React.FC = () => {
                   const errorMsg = `Error: ${chrome.runtime.lastError.message}`;
                   setError(errorMsg);
                   reject(new Error(errorMsg));
-                } else if (results && results[0]) {
+                } else if (results?.[0]) {
                   const data = results[0].result as PageData;
                   setPageData(data);
                   resolve(data);
@@ -72,7 +68,7 @@ const App: React.FC = () => {
 
   const authenticate = (): Promise<string> => {
     return new Promise((resolve, reject) => {
-      if (authToken) {
+      if (authToken && authToken.softExpiration <= new Date().getTime()) {
         resolve(authToken.token);
         return;
       }
@@ -82,7 +78,7 @@ const App: React.FC = () => {
           reject(chrome.runtime.lastError);
           return;
         }
-        
+
         if (!token) {
           reject(new Error("Failed to get auth token"));
           return;
@@ -90,17 +86,19 @@ const App: React.FC = () => {
 
         const newAuthToken: AuthToken = {
           token: token as string,
+          softExpiration: new Date().getTime() + 3600000, // expires in 1 hour
         };
-        
+
         setAuthToken(newAuthToken);
-        chrome.storage.local.set({ authToken: newAuthToken });
-        
+        chrome.storage.local.set({
+          authToken: newAuthToken,
+        });
+
         resolve(token as string);
       });
     });
   };
 
-  // Function to upload to Google Drive
   const uploadToGoogleDrive = async (data: PageData) => {
     setIsUploading(true);
     setError(null);
@@ -108,45 +106,10 @@ const App: React.FC = () => {
 
     try {
       const token = await authenticate();
-      
-      // Create file metadata
-      const metadata = {
-        name: `${data.title || 'Untitled Page'}.html`,
-        mimeType: 'text/html',
-        description: `Captured from ${data.url} using Clipoline extension`
-      };
-
-      // Create multipart request
-      const boundary = 'clipoline_boundary';
-      const delimiter = `\r\n--${boundary}\r\n`;
-      const closeDelimiter = `\r\n--${boundary}--`;
-
-      // Construct the multipart request body
-      let requestBody =
-        delimiter +
-        'Content-Type: application/json\r\n\r\n' +
-        JSON.stringify(metadata) +
-        delimiter +
-        'Content-Type: text/html\r\n\r\n' +
-        data.html +
-        closeDelimiter;
-
-      // Upload to Google Drive
-      const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': `multipart/related; boundary=${boundary}`
-        },
-        body: requestBody
+      const result = await uploadDataToGoogleDrive(token, data, {
+        mimeType: "text/html",
+        fileExtension: "html",
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Upload failed: ${errorData.error?.message || response.statusText}`);
-      }
-
-      const result = await response.json();
       setUploadSuccess(true);
       return result;
     } catch (err) {
@@ -158,21 +121,19 @@ const App: React.FC = () => {
   };
 
   const extractAndUpload = async () => {
-    try {
-      const data = await extractPageContent();
-      if (data) {
-        await uploadToGoogleDrive(data);
-      }
-    } catch (err) {
-      // Error is already set by the individual functions
+    const data = await extractPageContent();
+    if (data) {
+      await uploadToGoogleDrive(data);
     }
   };
 
   // Load auth token from storage on component mount
   useEffect(() => {
-    chrome.storage?.local.get(['authToken'], (result) => {
-      if (result['authToken']) {
-        setAuthToken(result['authToken'] as AuthToken);
+    chrome.storage?.local.get(["authToken"], (result) => {
+      // biome-ignore lint/complexity/useLiteralKeys: <explanation>
+      if (result["authToken"]) {
+        // biome-ignore lint/complexity/useLiteralKeys: <explanation>
+        setAuthToken(result["authToken"] as AuthToken);
       }
     });
   }, []);
@@ -180,12 +141,9 @@ const App: React.FC = () => {
   return (
     <div className="container">
       <h1>Clipoline</h1>
-      
+
       <div className="button-group">
-        <button
-          onClick={extractAndUpload}
-          disabled={isUploading}
-        >
+        <button type="button" onClick={extractAndUpload} disabled={isUploading}>
           {isUploading ? "Uploading to Google Drive..." : "Extract & Upload to Google Drive"}
         </button>
       </div>
@@ -205,9 +163,15 @@ const App: React.FC = () => {
       {pageData && (
         <div className="content-preview">
           <h2>Page Content Preview:</h2>
-          <p><strong>Title:</strong> {pageData.title}</p>
-          <p><strong>URL:</strong> {pageData.url}</p>
-          <p><strong>Content:</strong> {pageData.content.substring(0, 100)}...</p>
+          <p>
+            <strong>Title:</strong> {pageData.title}
+          </p>
+          <p>
+            <strong>URL:</strong> {pageData.url}
+          </p>
+          <p>
+            <strong>Content:</strong> {pageData.content.substring(0, 100)}...
+          </p>
         </div>
       )}
     </div>

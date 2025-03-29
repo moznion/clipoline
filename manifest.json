@@ -8,11 +8,9 @@
     "default_icon": "hello_extensions.png"
   },
   "permissions": ["activeTab", "scripting", "identity", "storage"],
-  "host_permissions": ["https://www.googleapis.com/"],
+  "host_permissions": ["https://www.googleapis.com/", "http://*/*", "https://*/*"],
   "oauth2": {
     "client_id": "647914624947-iui3dbthk4rm74freuqi38fvj95lpjbk.apps.googleusercontent.com",
-    "scopes": [
-      "https://www.googleapis.com/auth/drive.file"
-    ]
+    "scopes": ["https://www.googleapis.com/auth/drive.file"]
   }
 }
