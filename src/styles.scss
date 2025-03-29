@@ -1,0 +1,73 @@
+// Variables
+$font-family: Arial, sans-serif;
+$primary-color: #4285f4;
+$primary-color-dark: #3367d6;
+$error-bg: #ffebee;
+$error-border: #ffcdd2;
+$error-text: #c62828;
+$success-bg: #e8f5e9;
+$success-border: #c8e6c9;
+
+// Mixins
+@mixin card($bg-color, $border-color) {
+  margin-top: 15px;
+  padding: 10px;
+  background-color: $bg-color;
+  border: 1px solid $border-color;
+  border-radius: 4px;
+}
+
+body {
+  width: 300px;
+  padding: 10px;
+  font-family: $font-family;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+}
+
+h1 {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+h2 {
+  font-size: 16px;
+  margin-top: 15px;
+  margin-bottom: 5px;
+}
+
+button {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background-color: $primary-color;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  
+  &:hover {
+    background-color: $primary-color-dark;
+  }
+}
+
+.error {
+  @include card($error-bg, $error-border);
+  color: $error-text;
+}
+
+.content-preview {
+  @include card($success-bg, $success-border);
+  max-height: 200px;
+  overflow-y: auto;
+  
+  p {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.4;
+    word-break: break-word;
+  }
+}

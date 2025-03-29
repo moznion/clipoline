@@ -22,10 +22,11 @@
     "@biomejs/biome": "1.9.4",
     "@crxjs/vite-plugin": "2.0.0-beta.32",
     "@types/chrome": "0.0.313",
-    "typescript": "5.8.2",
-    "vite": "6.2.3",
     "@types/react": "^19.0.12",
-    "@types/react-dom": "^19.0.4"
+    "@types/react-dom": "^19.0.4",
+    "sass": "^1.86.0",
+    "typescript": "5.8.2",
+    "vite": "6.2.3"
   },
   "dependencies": {
     "react": "^19.1.0",
