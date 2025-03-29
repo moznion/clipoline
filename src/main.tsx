@@ -46,12 +46,10 @@ const App: React.FC = () => {
                 if (chrome.runtime.lastError) {
                   const errorMsg = `Error: ${chrome.runtime.lastError.message}`;
                   setError(errorMsg);
-                  console.error("Error:", chrome.runtime.lastError);
                   reject(new Error(errorMsg));
                 } else if (results && results[0]) {
                   const data = results[0].result as PageData;
                   setPageData(data);
-                  console.log("Web page data:", data);
                   resolve(data);
                 } else {
                   reject(new Error("No results returned"));
@@ -61,13 +59,11 @@ const App: React.FC = () => {
           } else {
             const errorMsg = "No active tab ID found";
             setError(errorMsg);
-            console.error(errorMsg);
             reject(new Error(errorMsg));
           }
         } else {
           const errorMsg = "No active tabs found";
           setError(errorMsg);
-          console.error(errorMsg);
           reject(new Error(errorMsg));
         }
       });
@@ -151,11 +147,9 @@ const App: React.FC = () => {
       }
 
       const result = await response.json();
-      console.log('File uploaded successfully:', result);
       setUploadSuccess(true);
       return result;
     } catch (err) {
-      console.error('Upload error:', err);
       setError(`Upload error: ${err instanceof Error ? err.message : String(err)}`);
       throw err;
     } finally {
@@ -163,7 +157,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Combined function to extract and upload
   const extractAndUpload = async () => {
     try {
       const data = await extractPageContent();
@@ -171,7 +164,6 @@ const App: React.FC = () => {
         await uploadToGoogleDrive(data);
       }
     } catch (err) {
-      console.error('Extract and upload error:', err);
       // Error is already set by the individual functions
     }
   };
