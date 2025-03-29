@@ -22,6 +22,7 @@
     "noUncheckedIndexedAccess": true,
     "noPropertyAccessFromIndexSignature": true,
     "exactOptionalPropertyTypes": true,
+    "jsx": "react-jsx",
     "typeRoots": ["./node_modules/@types"],
     "types": ["chrome"],
     "resolveJsonModule": true,
