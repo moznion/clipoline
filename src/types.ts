@@ -4,6 +4,8 @@ export interface PageData {
   content: string;
   entireHTML: string;
   bodyHTML: string;
+  paperHeight: number;
+  paperWidth: number;
 }
 
 export interface UploadData {

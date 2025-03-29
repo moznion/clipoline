@@ -7,7 +7,7 @@ import { transformToTextContent } from "@/transformers/text_transformer";
 import type { PageData, UploadData } from "@/types";
 import { transformToMarkdownContent } from "./transformers/markdown_transformer";
 
-type FileFormat = "text" | "markdown";
+type FileFormat = "text" | "markdown" | "pdf";
 
 interface AuthToken {
   token: string;
@@ -84,12 +84,123 @@ const App: React.FC = () => {
     }
   };
 
+  // Define the type for the PDF result
+  interface PrintToPDFResult {
+    data: string;
+  }
+
+  const extractPDF = async (
+    tabId: number,
+    paperWidth: number,
+    paperHeight: number,
+  ): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      // Attach debugger to the tab
+      chrome.debugger.attach({ tabId }, "1.3", async () => {
+        if (chrome.runtime.lastError) {
+          chrome.debugger.detach({ tabId });
+          reject(`Failed to attach debugger: ${chrome.runtime.lastError.message}`);
+          return;
+        }
+
+        // Send the Page.printToPDF command with options to capture entire content
+        chrome.debugger.sendCommand(
+          { tabId },
+          "Page.printToPDF",
+          {
+            printBackground: true,
+            preferCSSPageSize: true,
+            paperWidth,
+            paperHeight,
+            scale: 0.9,
+            marginTop: 0,
+            marginBottom: 0,
+            marginLeft: 0,
+            marginRight: 0,
+            pageRanges: "",
+            landscape: false,
+            displayHeaderFooter: false,
+            ignoreInvalidPageRanges: true,
+          },
+          (result) => {
+            // Detach debugger
+            chrome.debugger.detach({ tabId });
+
+            if (chrome.runtime.lastError) {
+              reject(`Failed to generate PDF: ${chrome.runtime.lastError.message}`);
+              return;
+            }
+
+            // Cast the result to our expected type
+            const pdfResult = result as PrintToPDFResult;
+
+            if (!pdfResult || !pdfResult.data) {
+              reject("No PDF data returned");
+              return;
+            }
+
+            resolve(pdfResult.data);
+          },
+        );
+      });
+    });
+  };
+
   const extractAndUpload = async () => {
-    const pageData = await extractPageContentAction();
-    if (pageData) {
-      const transformer =
-        fileFormat === "markdown" ? transformToMarkdownContent : transformToTextContent;
-      await uploadToGoogleDriveAction(transformer(pageData));
+    try {
+      const pageData = await extractPageContentAction();
+      if (!pageData) return;
+
+      if (fileFormat === "pdf") {
+        // Get the active tab ID
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tabs || tabs.length === 0) {
+          setError("No active tab found");
+          return;
+        }
+
+        const activeTab = tabs[0];
+        if (!activeTab || activeTab.id === undefined) {
+          setError("No active tab ID found");
+          return;
+        }
+
+        const tabId = activeTab.id;
+
+        // Generate PDF using debugger API
+        const pdfBase64 = await extractPDF(tabId, pageData.paperWidth, pageData.paperHeight);
+
+        // Convert base64 to binary
+        const binaryPdf = atob(pdfBase64);
+
+        // Create array buffer from binary string
+        const arrayBuffer = new ArrayBuffer(binaryPdf.length);
+        const uint8Array = new Uint8Array(arrayBuffer);
+        for (let i = 0; i < binaryPdf.length; i++) {
+          uint8Array[i] = binaryPdf.charCodeAt(i);
+        }
+
+        // Create blob from array buffer
+        const pdfBlob = new Blob([arrayBuffer], { type: "application/pdf" });
+
+        // Create upload data
+        const uploadData: UploadData = {
+          pageData,
+          data: pdfBlob,
+          mimeType: "application/pdf",
+          fileExtension: "pdf",
+        };
+
+        // Upload to Google Drive
+        await uploadToGoogleDriveAction(uploadData);
+      } else {
+        // Handle text and markdown formats
+        const transformer =
+          fileFormat === "markdown" ? transformToMarkdownContent : transformToTextContent;
+        await uploadToGoogleDriveAction(transformer(pageData));
+      }
+    } catch (err) {
+      setError(`Extraction error: ${err instanceof Error ? err.message : String(err)}`);
     }
   };
 
@@ -124,6 +235,14 @@ const App: React.FC = () => {
           aria-pressed={fileFormat === "text"}
         >
           Plain Text
+        </button>
+        <button
+          type="button"
+          className={`format-chip ${fileFormat === "pdf" ? "selected" : ""}`}
+          onClick={() => setFileFormat("pdf")}
+          aria-pressed={fileFormat === "pdf"}
+        >
+          PDF
         </button>
       </div>
 

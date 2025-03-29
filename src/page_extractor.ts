@@ -18,12 +18,15 @@ export function extractPage(): Promise<PageData> {
         {
           target: { tabId: activeTab.id },
           func: () => {
+            const dpi = 96;
             return {
               title: document.title,
               url: window.location.href,
               content: document.body.textContent || "",
               entireHTML: document.documentElement.outerHTML,
               bodyHTML: document.body.outerHTML,
+              paperHeight: document.body.scrollHeight / dpi,
+              paperWidth: document.body.scrollWidth / dpi,
             };
           },
         },
