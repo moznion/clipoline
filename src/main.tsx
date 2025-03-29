@@ -7,6 +7,8 @@ import { transformToTextContent } from "@/transformers/text_transformer";
 import type { PageData, UploadData } from "@/types";
 import { transformToMarkdownContent } from "./transformers/markdown_transformer";
 
+type FileFormat = "text" | "markdown";
+
 interface AuthToken {
   token: string;
   softExpiration: number;
@@ -17,6 +19,7 @@ const App: React.FC = () => {
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadSuccess, setUploadSuccess] = useState<boolean>(false);
   const [authToken, setAuthToken] = useState<AuthToken | null>(null);
+  const [fileFormat, setFileFormat] = useState<FileFormat>("markdown");
 
   const extractPageContentAction = async (): Promise<PageData | null> => {
     setError(null);
@@ -84,7 +87,9 @@ const App: React.FC = () => {
   const extractAndUpload = async () => {
     const pageData = await extractPageContentAction();
     if (pageData) {
-      await uploadToGoogleDriveAction(transformToMarkdownContent(pageData));
+      const transformer =
+        fileFormat === "markdown" ? transformToMarkdownContent : transformToTextContent;
+      await uploadToGoogleDriveAction(transformer(pageData));
     }
   };
 
@@ -102,6 +107,25 @@ const App: React.FC = () => {
   return (
     <div className="container">
       <h1>Clipoline</h1>
+
+      <div className="format-selector">
+        <button
+          type="button"
+          className={`format-chip ${fileFormat === "markdown" ? "selected" : ""}`}
+          onClick={() => setFileFormat("markdown")}
+          aria-pressed={fileFormat === "markdown"}
+        >
+          Markdown
+        </button>
+        <button
+          type="button"
+          className={`format-chip ${fileFormat === "text" ? "selected" : ""}`}
+          onClick={() => setFileFormat("text")}
+          aria-pressed={fileFormat === "text"}
+        >
+          Plain Text
+        </button>
+      </div>
 
       <div className="button-group">
         <button type="button" onClick={extractAndUpload} disabled={isUploading}>

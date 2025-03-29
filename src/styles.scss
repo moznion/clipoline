@@ -104,3 +104,41 @@ button {
     font-weight: bold;
   }
 }
+
+.format-selector {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 15px;
+  
+  .format-chip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: #f1f3f4;
+    border: 2px solid transparent;
+    color: #5f6368;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    
+    &:hover {
+      background-color: #e8eaed;
+    }
+    
+    &.selected {
+      background-color: rgba($primary-color, 0.1);
+      border-color: $primary-color;
+      color: $primary-color;
+    }
+    
+    &:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px rgba($primary-color, 0.3);
+    }
+  }
+}
