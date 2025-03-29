@@ -4,8 +4,7 @@ A Chrome extension that captures web pages in various formats and sends them to 
 
 ## Features
 
-- Extract content from the current tab (HTML, text)
-- Upload extracted content to Google Drive
+- Extract content from the current tab (HTML, text) and upload directly to Google Drive
 - More destinations coming soon!
 
 ## Development Setup
@@ -72,9 +71,8 @@ For detailed instructions, see the [Chrome Extension OAuth Guide](https://develo
 ## Usage
 
 1. Click on the extension icon in your browser toolbar
-2. Click "Extract Page Content" to extract the content from the current tab
-3. Click "Upload to Google Drive" to upload the extracted content to your Google Drive
-4. The extension will request permission to access your Google Drive the first time you use this feature
+2. Click "Extract & Upload to Google Drive" to extract the content from the current tab and upload it directly to your Google Drive
+3. The extension will request permission to access your Google Drive the first time you use this feature
 
 ## License
 

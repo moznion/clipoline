@@ -21,47 +21,56 @@ const App: React.FC = () => {
   const [authToken, setAuthToken] = useState<AuthToken | null>(null);
 
   // Function to extract page content
-  const extractPageContent = () => {
-    setError(null);
-    setUploadSuccess(false);
-    
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs && tabs.length > 0) {
-        const activeTab = tabs[0];
-        if (activeTab && activeTab.id !== undefined) {
-          chrome.scripting.executeScript(
-            {
-              target: { tabId: activeTab.id },
-              func: () => {
-                return {
-                  title: document.title,
-                  url: window.location.href,
-                  content: document.body.textContent || "",
-                  html: document.documentElement.outerHTML
-                };
+  const extractPageContent = (): Promise<PageData | null> => {
+    return new Promise((resolve, reject) => {
+      setError(null);
+      setUploadSuccess(false);
+      
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs && tabs.length > 0) {
+          const activeTab = tabs[0];
+          if (activeTab && activeTab.id !== undefined) {
+            chrome.scripting.executeScript(
+              {
+                target: { tabId: activeTab.id },
+                func: () => {
+                  return {
+                    title: document.title,
+                    url: window.location.href,
+                    content: document.body.textContent || "",
+                    html: document.documentElement.outerHTML
+                  };
+                },
               },
-            },
-            (results) => {
-              if (chrome.runtime.lastError) {
-                setError(`Error: ${chrome.runtime.lastError.message}`);
-                console.error("Error:", chrome.runtime.lastError);
-              } else if (results && results[0]) {
-                const data = results[0].result as PageData;
-                setPageData(data);
-                console.log("Web page data:", data);
-              }
-            },
-          );
+              (results) => {
+                if (chrome.runtime.lastError) {
+                  const errorMsg = `Error: ${chrome.runtime.lastError.message}`;
+                  setError(errorMsg);
+                  console.error("Error:", chrome.runtime.lastError);
+                  reject(new Error(errorMsg));
+                } else if (results && results[0]) {
+                  const data = results[0].result as PageData;
+                  setPageData(data);
+                  console.log("Web page data:", data);
+                  resolve(data);
+                } else {
+                  reject(new Error("No results returned"));
+                }
+              },
+            );
+          } else {
+            const errorMsg = "No active tab ID found";
+            setError(errorMsg);
+            console.error(errorMsg);
+            reject(new Error(errorMsg));
+          }
         } else {
-          const errorMsg = "No active tab ID found";
+          const errorMsg = "No active tabs found";
           setError(errorMsg);
           console.error(errorMsg);
+          reject(new Error(errorMsg));
         }
-      } else {
-        const errorMsg = "No active tabs found";
-        setError(errorMsg);
-        console.error(errorMsg);
-      }
+      });
     });
   };
 
@@ -96,12 +105,7 @@ const App: React.FC = () => {
   };
 
   // Function to upload to Google Drive
-  const uploadToGoogleDrive = async () => {
-    if (!pageData) {
-      setError("No page data to upload");
-      return;
-    }
-
+  const uploadToGoogleDrive = async (data: PageData) => {
     setIsUploading(true);
     setError(null);
     setUploadSuccess(false);
@@ -111,9 +115,9 @@ const App: React.FC = () => {
       
       // Create file metadata
       const metadata = {
-        name: `${pageData.title || 'Untitled Page'}.html`,
+        name: `${data.title || 'Untitled Page'}.html`,
         mimeType: 'text/html',
-        description: `Captured from ${pageData.url} using Clipoline extension`
+        description: `Captured from ${data.url} using Clipoline extension`
       };
 
       // Create multipart request
@@ -128,7 +132,7 @@ const App: React.FC = () => {
         JSON.stringify(metadata) +
         delimiter +
         'Content-Type: text/html\r\n\r\n' +
-        pageData.html +
+        data.html +
         closeDelimiter;
 
       // Upload to Google Drive
@@ -149,11 +153,26 @@ const App: React.FC = () => {
       const result = await response.json();
       console.log('File uploaded successfully:', result);
       setUploadSuccess(true);
+      return result;
     } catch (err) {
       console.error('Upload error:', err);
       setError(`Upload error: ${err instanceof Error ? err.message : String(err)}`);
+      throw err;
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  // Combined function to extract and upload
+  const extractAndUpload = async () => {
+    try {
+      const data = await extractPageContent();
+      if (data) {
+        await uploadToGoogleDrive(data);
+      }
+    } catch (err) {
+      console.error('Extract and upload error:', err);
+      // Error is already set by the individual functions
     }
   };
 
@@ -172,18 +191,10 @@ const App: React.FC = () => {
       
       <div className="button-group">
         <button
-          onClick={extractPageContent}
+          onClick={extractAndUpload}
           disabled={isUploading}
         >
-          Extract Page Content
-        </button>
-        
-        <button
-          onClick={uploadToGoogleDrive}
-          disabled={!pageData || isUploading}
-          className={!pageData ? "disabled" : ""}
-        >
-          {isUploading ? "Uploading..." : "Upload to Google Drive"}
+          {isUploading ? "Uploading to Google Drive..." : "Extract & Upload to Google Drive"}
         </button>
       </div>
 
