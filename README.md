@@ -2,12 +2,19 @@
 
 A Chrome extension that captures web pages in various formats and sends them to different destinations.
 
+## Features
+
+- Extract content from the current tab (HTML, text)
+- Upload extracted content to Google Drive
+- More destinations coming soon!
+
 ## Development Setup
 
 ### Prerequisites
 
 - Node.js (v22 or later)
 - pnpm (v10 or later)
+- Google Cloud Platform account (for Google Drive integration)
 
 ### Installation
 
@@ -16,6 +23,19 @@ A Chrome extension that captures web pages in various formats and sends them to 
    ```
    pnpm install
    ```
+
+### Google Drive Integration Setup
+
+To enable Google Drive integration, you need to:
+
+1. Create a project in the [Google Cloud Console](https://console.cloud.google.com/)
+2. Enable the Google Drive API
+3. Create OAuth 2.0 credentials for a Chrome extension
+4. Update the manifest.json file with your credentials:
+   - Replace `${YOUR_CLIENT_ID}` with your actual client ID
+   - Replace `${YOUR_EXTENSION_KEY}` with your extension key
+
+For detailed instructions, see the [Chrome Extension OAuth Guide](https://developer.chrome.com/docs/extensions/how-to/integrate/oauth).
 
 ### Development Workflow
 
@@ -48,6 +68,13 @@ A Chrome extension that captures web pages in various formats and sends them to 
   ```
   pnpm run check:fix
   ```
+
+## Usage
+
+1. Click on the extension icon in your browser toolbar
+2. Click "Extract Page Content" to extract the content from the current tab
+3. Click "Upload to Google Drive" to upload the extracted content to your Google Drive
+4. The extension will request permission to access your Google Drive the first time you use this feature
 
 ## License
 
