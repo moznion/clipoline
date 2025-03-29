@@ -3,7 +3,9 @@ import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import "@/styles.scss";
 import { uploadDataToGoogleDrive as uploadToGoogleDrive } from "@/google_drive";
+import { transformToTextContent } from "@/transformers/text_transformer";
 import type { PageData, UploadData } from "@/types";
+import { transformToMarkdownContent } from "./transformers/markdown_transformer";
 
 interface AuthToken {
   token: string;
@@ -82,13 +84,7 @@ const App: React.FC = () => {
   const extractAndUpload = async () => {
     const pageData = await extractPageContentAction();
     if (pageData) {
-      const data = {
-        pageData,
-        data: new Blob([pageData.content], { type: "text/plain" }), // TODO
-        mimeType: "text/plain",
-        fileExtension: "txt",
-      };
-      await uploadToGoogleDriveAction(data);
+      await uploadToGoogleDriveAction(transformToMarkdownContent(pageData));
     }
   };
 

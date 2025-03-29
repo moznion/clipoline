@@ -22,7 +22,8 @@ export function extractPage(): Promise<PageData> {
               title: document.title,
               url: window.location.href,
               content: document.body.textContent || "",
-              html: document.documentElement.outerHTML,
+              entireHTML: document.documentElement.outerHTML,
+              bodyHTML: document.body.outerHTML,
             };
           },
         },
