@@ -22,7 +22,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     const { notebookId, data } = message;
 
     if (notebookId && data) {
-      uploadToNotebookBackground(notebookId, data)
+      pasteToNotebook(notebookId, data)
         .then((result) => sendResponse({ success: true, result }))
         .catch((error) =>
           sendResponse({
@@ -90,7 +90,7 @@ async function fetchDataFromNotebookLM(tabId: number): Promise<NotebookInfo[]> {
   }
 }
 
-async function uploadToNotebookBackground(notebookId: string, uploadData: string): Promise<void> {
+async function pasteToNotebook(notebookId: string, uploadData: string): Promise<void> {
   const tabId = await createTab(`https://notebooklm.google.com/notebook/${notebookId}`, false);
   let browser: Browser | undefined = undefined;
 
