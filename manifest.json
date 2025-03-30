@@ -11,7 +11,7 @@
     "service_worker": "src/background.ts",
     "type": "module"
   },
-  "permissions": ["activeTab", "scripting", "identity", "storage", "debugger", "tabs"],
+  "permissions": ["activeTab", "scripting", "identity", "debugger", "tabs"],
   "host_permissions": ["https://www.googleapis.com/"],
   "oauth2": {
     "client_id": "647914624947-iui3dbthk4rm74freuqi38fvj95lpjbk.apps.googleusercontent.com",

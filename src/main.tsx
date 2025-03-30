@@ -165,7 +165,6 @@ const App: React.FC = () => {
       if (!pageData) return;
 
       if (fileFormat === "pdf") {
-        // Get the active tab ID
         const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
         if (!tabs || tabs.length === 0) {
           setError("No active tab found");
@@ -180,13 +179,10 @@ const App: React.FC = () => {
 
         const tabId = activeTab.id;
 
-        // Generate PDF using debugger API
         const pdfBase64 = await extractPDF(tabId, pageData.paperWidth, pageData.paperHeight);
 
-        // Convert base64 to binary
         const binaryPdf = atob(pdfBase64);
 
-        // Create array buffer from binary string
         const arrayBuffer = new ArrayBuffer(binaryPdf.length);
         const uint8Array = new Uint8Array(arrayBuffer);
         for (let i = 0; i < binaryPdf.length; i++) {
