@@ -123,7 +123,6 @@ const App: React.FC = () => {
     }
   }, [destination]);
 
-  // Define the type for the PDF result
   interface PrintToPDFResult {
     data: string;
   }
@@ -134,7 +133,6 @@ const App: React.FC = () => {
     paperHeight: number,
   ): Promise<string> => {
     return new Promise((resolve, reject) => {
-      // Attach debugger to the tab
       chrome.debugger.attach({ tabId }, "1.3", async () => {
         if (chrome.runtime.lastError) {
           chrome.debugger.detach({ tabId });
@@ -142,7 +140,6 @@ const App: React.FC = () => {
           return;
         }
 
-        // Send the Page.printToPDF command with options to capture entire content
         chrome.debugger.sendCommand(
           { tabId },
           "Page.printToPDF",
@@ -162,7 +159,6 @@ const App: React.FC = () => {
             ignoreInvalidPageRanges: true,
           },
           (result) => {
-            // Detach debugger
             chrome.debugger.detach({ tabId });
 
             if (chrome.runtime.lastError) {
@@ -170,7 +166,6 @@ const App: React.FC = () => {
               return;
             }
 
-            // Cast the result to our expected type
             const pdfResult = result as PrintToPDFResult;
 
             if (!pdfResult || !pdfResult.data) {

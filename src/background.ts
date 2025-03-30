@@ -1,4 +1,3 @@
-// Background service worker for Clipoline extension
 import type { NotebookInfo } from "@/types";
 import {
   type Browser,
@@ -32,7 +31,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           }),
         );
 
-      return true; // Indicate we're sending response asynchronously
+      return true;
     }
 
     sendResponse({ success: false, error: "Missing notebookId or data" });
@@ -113,28 +112,36 @@ async function uploadToNotebookBackground(notebookId: string, uploadData: string
     await chrome.tabs.update(tabId, { active: true });
     await page.waitForSelector(".add-source-button", { visible: true });
 
-    await setTimeout(async () => {
+    setTimeout(async () => {
       try {
+        await page.keyboard.press("Escape");
         await (await page.$(".add-source-button"))?.click();
-
-        const chipGroups = await page.$$(".chip-group .ng-star-inserted");
-        await chipGroups[chipGroups.length - 1]?.click();
-
-        await page.waitForSelector("paste-text form textarea", { visible: true });
-        await page.$eval(
-          "paste-text form textarea",
-          (el, value) => {
-            el.value = value;
-          },
-          uploadData,
-        );
-        await page.focus("paste-text form textarea");
-        await page.keyboard.type(" ");
-        await page.click('paste-text button[type="submit"]');
-      } finally {
-        await setTimeout(async () => {
-          await cleanup();
+        setTimeout(async () => {
+          try {
+            const chipGroups = await page.$$(".chip-group .ng-star-inserted");
+            await chipGroups[chipGroups.length - 1]?.click();
+            await page.waitForSelector("paste-text form textarea", { visible: true });
+            await page.$eval(
+              "paste-text form textarea",
+              (el, value) => {
+                el.value = value;
+              },
+              uploadData,
+            );
+            await page.focus("paste-text form textarea");
+            await page.keyboard.type(" ");
+            await page.click('paste-text button[type="submit"]');
+          } finally {
+            setTimeout(async () => {
+              await cleanup();
+            }, 500);
+          }
         }, 500);
+      } catch (error) {
+        await cleanup();
+        throw new Error(
+          `Failed to upload to notebook: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
     }, 500);
   } catch (error) {
