@@ -1,11 +1,11 @@
 {
   "name": "Clipone",
   "description": "A Chrome extension that captures web pages in various formats and sends them to different destinations.",
-  "version": "1.0",
+  "version": "0.0.1",
   "manifest_version": 3,
   "action": {
     "default_popup": "index.html",
-    "default_icon": "hello_extensions.png"
+    "default_icon": "clipoline.png"
   },
   "background": {
     "service_worker": "src/background.ts",
@@ -13,10 +13,7 @@
   },
   "permissions": ["activeTab", "scripting", "identity", "storage", "debugger", "tabs"],
   "host_permissions": [
-    "https://www.googleapis.com/",
-    "http://*/*",
-    "https://*/*",
-    "https://notebooklm.google.com/*"
+    "https://www.googleapis.com/"
   ],
   "oauth2": {
     "client_id": "647914624947-iui3dbthk4rm74freuqi38fvj95lpjbk.apps.googleusercontent.com",

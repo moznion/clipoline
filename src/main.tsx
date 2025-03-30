@@ -219,7 +219,7 @@ const App: React.FC = () => {
 
   return (
     <div className="container">
-      <h1>Clipoline</h1>
+      <h1>📎🤸Clipoline</h1>
 
       <div className="format-selector">
         <h3>File Format</h3>

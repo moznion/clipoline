@@ -1,4 +1,4 @@
-# Clipoline
+# 📎🤸Clipoline
 
 A Chrome extension that captures web pages in various formats and sends them to different destinations.
 
