@@ -113,31 +113,30 @@ async function uploadToNotebookBackground(notebookId: string, uploadData: string
     await chrome.tabs.update(tabId, { active: true });
     await page.waitForSelector(".add-source-button", { visible: true });
 
-    return new Promise((resolve) => {
-      setTimeout(async () => {
-        try {
-          await (await page.$(".add-source-button"))?.click();
+    await setTimeout(async () => {
+      try {
+        await (await page.$(".add-source-button"))?.click();
 
-          const chipGroups = await page.$$(".chip-group .ng-star-inserted");
-          await chipGroups[chipGroups.length - 1]?.click();
+        const chipGroups = await page.$$(".chip-group .ng-star-inserted");
+        await chipGroups[chipGroups.length - 1]?.click();
 
-          await page.waitForSelector("paste-text form textarea", { visible: true });
-          await page.$eval(
-            "paste-text form textarea",
-            (el, value) => {
-              el.value = value;
-            },
-            uploadData,
-          );
-          await page.focus("paste-text form textarea");
-          await page.keyboard.type(" ");
-          await page.click('paste-text button[type="submit"]');
-          resolve();
-        } finally {
+        await page.waitForSelector("paste-text form textarea", { visible: true });
+        await page.$eval(
+          "paste-text form textarea",
+          (el, value) => {
+            el.value = value;
+          },
+          uploadData,
+        );
+        await page.focus("paste-text form textarea");
+        await page.keyboard.type(" ");
+        await page.click('paste-text button[type="submit"]');
+      } finally {
+        await setTimeout(async () => {
           await cleanup();
-        }
-      }, 500);
-    });
+        }, 500);
+      }
+    }, 500);
   } catch (error) {
     await cleanup();
     throw new Error(
