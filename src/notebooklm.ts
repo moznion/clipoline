@@ -23,14 +23,19 @@ export async function fetchNotebooksList(): Promise<NotebookInfo[]> {
   });
 }
 
-export async function uploadToNotebookLM(notebookId: string, data: UploadData): Promise<string> {
+export async function uploadToNotebookLM(
+  notebookId: string,
+  uploadData: UploadData,
+): Promise<string> {
+  const arrayBuffer = await uploadData.data.arrayBuffer();
   try {
     return new Promise((resolve, reject) => {
       chrome.runtime.sendMessage(
         {
           action: "uploadToNotebook",
           notebookId,
-          data: data.pageData.content,
+          uploadData,
+          arrayData: Array.from(new Uint8Array(arrayBuffer)),
         },
         (response) => {
           if (chrome.runtime.lastError) {

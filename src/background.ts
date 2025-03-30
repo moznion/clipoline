@@ -1,8 +1,8 @@
-import type { NotebookInfo } from "@/types";
+import type { NotebookInfo, UploadData } from "@/types";
 import {
   type Browser,
-  connect,
   ExtensionTransport,
+  connect,
 } from "puppeteer-core/lib/esm/puppeteer/puppeteer-core-browser.js";
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -19,10 +19,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 
   if (message.action === "uploadToNotebook") {
-    const { notebookId, data } = message;
+    const { notebookId, uploadData, arrayData } = message;
 
-    if (notebookId && data) {
-      pasteToNotebook(notebookId, data)
+    if (notebookId && uploadData) {
+      uploadToNotebook(notebookId, uploadData, arrayData)
         .then((result) => sendResponse({ success: true, result }))
         .catch((error) =>
           sendResponse({
@@ -90,13 +90,19 @@ async function fetchDataFromNotebookLM(tabId: number): Promise<NotebookInfo[]> {
   }
 }
 
-async function pasteToNotebook(notebookId: string, uploadData: string): Promise<void> {
+async function uploadToNotebook(
+  notebookId: string,
+  uploadData: UploadData,
+  arrayData: number[],
+): Promise<void> {
   const tabId = await createTab(`https://notebooklm.google.com/notebook/${notebookId}`, false);
   let browser: Browser | undefined = undefined;
 
-  const cleanup = async () => {
+  const cleanup = async (closeTab: boolean) => {
     await browser?.disconnect();
-    await chrome.tabs.remove(tabId);
+    if (closeTab) {
+      await chrome.tabs.remove(tabId);
+    }
   };
 
   try {
@@ -118,34 +124,47 @@ async function pasteToNotebook(notebookId: string, uploadData: string): Promise<
         await (await page.$(".add-source-button"))?.click();
         setTimeout(async () => {
           try {
-            const chipGroups = await page.$$(".chip-group .ng-star-inserted");
-            await chipGroups[chipGroups.length - 1]?.click();
-            await page.waitForSelector("paste-text form textarea", { visible: true });
-            await page.$eval(
-              "paste-text form textarea",
-              (el, value) => {
-                el.value = value;
+            await page.waitForSelector(".dropzone__file-dialog-button");
+            await page.hover(".dropzone__file-dialog-button");
+            await page.waitForSelector("input[type=file]");
+            await page.evaluate(
+              (uploadData, arrayData) => {
+                const file = new File(
+                  [new Uint8Array(arrayData).buffer],
+                  `${uploadData.pageData.title}.${uploadData.fileExtension}`,
+                  { type: uploadData.mimeType },
+                );
+
+                const input = document.querySelector("input[type=file]") as HTMLInputElement;
+                if (!input) {
+                  throw new Error("failed to get the file uploading facade");
+                }
+
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                input.files = dataTransfer.files;
+
+                input.dispatchEvent(new Event("change", { bubbles: true }));
               },
               uploadData,
+              arrayData,
             );
-            await page.focus("paste-text form textarea");
-            await page.keyboard.type(" ");
-            await page.click('paste-text button[type="submit"]');
+            // await page.waitForSelector("input[type=file]", { hidden: true });
           } finally {
             setTimeout(async () => {
-              await cleanup();
-            }, 500);
+              await cleanup(false);
+            }, 2000);
           }
         }, 500);
       } catch (error) {
-        await cleanup();
+        await cleanup(true);
         throw new Error(
           `Failed to upload to notebook: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
     }, 500);
   } catch (error) {
-    await cleanup();
+    await cleanup(true);
     throw new Error(
       `Failed to upload to notebook: ${error instanceof Error ? error.message : String(error)}`,
     );
