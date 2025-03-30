@@ -1,5 +1,9 @@
 // Background service worker for Clipoline extension
 import type { NotebookInfo } from "@/types";
+import {
+  connect,
+  ExtensionTransport,
+} from 'puppeteer-core/lib/esm/puppeteer/puppeteer-core-browser.js';
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.action === "fetchNotebooks") {
@@ -52,41 +56,33 @@ async function fetchNotebooksBackground(): Promise<NotebookInfo[]> {
 }
 
 async function fetchDataFromNotebookLM(tabId: number): Promise<NotebookInfo[]> {
-  const maxRetry = 10;
-  let retry = 0;
-
-  return new Promise((resolve, reject) => {
-    const interval = setInterval(async () => {
-      if (retry >= maxRetry) {
-        reject(
-          "failed to fetch notebook information; it might have not been signed in to NotebookLM",
-        );
-        clearInterval(interval);
-        return;
-      }
-
-      const result = await chrome.scripting.executeScript({
-        target: { tabId },
-        func: () => {
-          const elements = document.getElementsByClassName("project-button-title");
-          return Array.from(elements).map((el) => {
-            return {
-              id: el.id.replace(/-title$/, ''),
-              name: (el as HTMLElement).innerText,
-            };
-          });
-        },
-      });
-
-      if (result?.length >= 0 && result[0]?.result) {
-        resolve(result[0].result);
-        clearInterval(interval);
-        return;
-      }
-
-      retry++;
-    }, 500);
+  const browser = await connect({
+    transport: await ExtensionTransport.connectTab(tabId),
   });
+
+  try {
+    const [page] = await browser.pages();
+
+    await page?.waitForSelector(".project-button-title");
+
+    const notebooks = await page?.$$(".project-button-title");
+    if (!notebooks) {
+      throw new Error(
+        "failed to fetch notebook information; it might have not been signed in to NotebookLM",
+      );
+    }
+
+    return await Promise.all(
+      notebooks.map(async (notebook) => {
+        return {
+          id: (await (await notebook.getProperty("id")).jsonValue()).replace(/-title$/, ""),
+          name: (await (await notebook.getProperty("innerHTML")).jsonValue()).trim(),
+        };
+      }),
+    );
+  } finally {
+    await browser.disconnect();
+  }
 }
 
 async function createOrGetHiddenTab(): Promise<number> {
