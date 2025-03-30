@@ -3,8 +3,9 @@ import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import "@/styles.scss";
 import { uploadDataToGoogleDrive as uploadToGoogleDrive } from "@/google_drive";
+import { fetchNotebooksList, uploadToNotebookLM } from "@/notebooklm";
 import { transformToTextContent } from "@/transformers/text_transformer";
-import type { PageData, UploadData } from "@/types";
+import type { Destination, NotebookInfo, PageData, UploadData } from "@/types";
 import { transformToMarkdownContent } from "./transformers/markdown_transformer";
 
 type FileFormat = "text" | "markdown" | "pdf";
@@ -20,6 +21,10 @@ const App: React.FC = () => {
   const [uploadSuccess, setUploadSuccess] = useState<boolean>(false);
   const [authToken, setAuthToken] = useState<AuthToken | null>(null);
   const [fileFormat, setFileFormat] = useState<FileFormat>("markdown");
+  const [destination, setDestination] = useState<Destination>("GoogleDrive");
+  const [notebooks, setNotebooks] = useState<NotebookInfo[]>([]);
+  const [selectedNotebookId, setSelectedNotebookId] = useState<string>("");
+  const [isLoadingNotebooks, setIsLoadingNotebooks] = useState<boolean>(false);
 
   const extractPageContentAction = async (): Promise<PageData | null> => {
     setError(null);
@@ -66,14 +71,26 @@ const App: React.FC = () => {
     });
   };
 
-  const uploadToGoogleDriveAction = async (data: UploadData) => {
+  const uploadDataAction = async (data: UploadData) => {
     setIsUploading(true);
     setError(null);
     setUploadSuccess(false);
 
     try {
-      const token = await authenticate();
-      const result = await uploadToGoogleDrive(token, data);
+      let result: string;
+
+      if (destination === "GoogleDrive") {
+        const token = await authenticate();
+        result = await uploadToGoogleDrive(token, data);
+      } else if (destination === "NotebookLM") {
+        if (!selectedNotebookId) {
+          throw new Error("No notebook selected");
+        }
+        result = await uploadToNotebookLM(selectedNotebookId, data);
+      } else {
+        throw new Error(`Unknown destination: ${destination}`);
+      }
+
       setUploadSuccess(true);
       return result;
     } catch (err) {
@@ -83,6 +100,28 @@ const App: React.FC = () => {
       setIsUploading(false);
     }
   };
+
+  // Load notebooks when NotebookLM is selected
+  useEffect(() => {
+    if (destination === "NotebookLM") {
+      setIsLoadingNotebooks(true);
+      setError(null);
+
+      fetchNotebooksList()
+        .then((notebooksData) => {
+          setNotebooks(notebooksData);
+          if (notebooksData.length > 0 && notebooksData[0]?.id) {
+            setSelectedNotebookId(notebooksData[0].id);
+          }
+        })
+        .catch((err) => {
+          setError(`Failed to load notebooks: ${err instanceof Error ? err.message : String(err)}`);
+        })
+        .finally(() => {
+          setIsLoadingNotebooks(false);
+        });
+    }
+  }, [destination]);
 
   // Define the type for the PDF result
   interface PrintToPDFResult {
@@ -191,13 +230,13 @@ const App: React.FC = () => {
           fileExtension: "pdf",
         };
 
-        // Upload to Google Drive
-        await uploadToGoogleDriveAction(uploadData);
+        // Upload to selected destination
+        await uploadDataAction(uploadData);
       } else {
         // Handle text and markdown formats
         const transformer =
           fileFormat === "markdown" ? transformToMarkdownContent : transformToTextContent;
-        await uploadToGoogleDriveAction(transformer(pageData));
+        await uploadDataAction(transformer(pageData));
       }
     } catch (err) {
       setError(`Extraction error: ${err instanceof Error ? err.message : String(err)}`);
@@ -246,9 +285,60 @@ const App: React.FC = () => {
         </button>
       </div>
 
+      <div className="destination-selector">
+        <h3>Select Destination</h3>
+        <div className="destination-options">
+          <button
+            type="button"
+            className={`destination-chip ${destination === "GoogleDrive" ? "selected" : ""}`}
+            onClick={() => setDestination("GoogleDrive")}
+            aria-pressed={destination === "GoogleDrive"}
+          >
+            Google Drive
+          </button>
+          <button
+            type="button"
+            className={`destination-chip ${destination === "NotebookLM" ? "selected" : ""}`}
+            onClick={() => setDestination("NotebookLM")}
+            aria-pressed={destination === "NotebookLM"}
+          >
+            NotebookLM
+          </button>
+        </div>
+      </div>
+
+      {destination === "NotebookLM" && (
+        <div className="notebook-selector">
+          <h3>Select Notebook</h3>
+          {isLoadingNotebooks ? (
+            <p>Loading notebooks...</p>
+          ) : notebooks.length > 0 ? (
+            <select
+              value={selectedNotebookId}
+              onChange={(e) => setSelectedNotebookId(e.target.value)}
+              disabled={isUploading}
+            >
+              {notebooks.map((notebook) => (
+                <option key={notebook.id} value={notebook.id}>
+                  {notebook.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <p>No notebooks found.</p>
+          )}
+        </div>
+      )}
+
       <div className="button-group">
-        <button type="button" onClick={extractAndUpload} disabled={isUploading}>
-          {isUploading ? "Uploading to Google Drive..." : "Extract & Upload to Google Drive"}
+        <button
+          type="button"
+          onClick={extractAndUpload}
+          disabled={isUploading || (destination === "NotebookLM" && !selectedNotebookId)}
+        >
+          {isUploading
+            ? `Uploading to ${destination === "GoogleDrive" ? "Google Drive" : "NotebookLM"}...`
+            : `Extract & Upload to ${destination === "GoogleDrive" ? "Google Drive" : "NotebookLM"}`}
         </button>
       </div>
 
@@ -260,7 +350,10 @@ const App: React.FC = () => {
 
       {uploadSuccess && (
         <div className="success">
-          <p>Successfully uploaded to Google Drive!</p>
+          <p>
+            Successfully uploaded to {destination === "GoogleDrive" ? "Google Drive" : "NotebookLM"}
+            !
+          </p>
         </div>
       )}
     </div>

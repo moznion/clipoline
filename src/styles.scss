@@ -105,40 +105,97 @@ button {
   }
 }
 
+.format-selector, .destination-selector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 15px;
+  
+  h3 {
+    font-size: 14px;
+    margin-bottom: 8px;
+    color: #5f6368;
+  }
+}
+
 .format-selector {
+  margin-bottom: 20px;
+}
+
+.format-chip, .destination-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: #f1f3f4;
+  border: 2px solid transparent;
+  color: #5f6368;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  
+  &:hover {
+    background-color: #e8eaed;
+  }
+  
+  &.selected {
+    background-color: rgba($primary-color, 0.1);
+    border-color: $primary-color;
+    color: $primary-color;
+  }
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba($primary-color, 0.3);
+  }
+}
+
+.destination-options, .format-selector {
   display: flex;
   justify-content: center;
   gap: 10px;
+}
+
+.notebook-selector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   margin-bottom: 15px;
   
-  .format-chip {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 16px;
-    border-radius: 20px;
+  h3 {
     font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    background-color: #f1f3f4;
-    border: 2px solid transparent;
+    margin-bottom: 8px;
     color: #5f6368;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    
-    &:hover {
-      background-color: #e8eaed;
-    }
-    
-    &.selected {
-      background-color: rgba($primary-color, 0.1);
-      border-color: $primary-color;
-      color: $primary-color;
-    }
+  }
+  
+  select {
+    width: 100%;
+    max-width: 250px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid #dadce0;
+    font-size: 14px;
+    background-color: white;
     
     &:focus {
       outline: none;
-      box-shadow: 0 0 0 2px rgba($primary-color, 0.3);
+      border-color: $primary-color;
+      box-shadow: 0 0 0 2px rgba($primary-color, 0.2);
     }
+    
+    &:disabled {
+      background-color: $disabled-bg;
+      color: $disabled-text;
+      cursor: not-allowed;
+    }
+  }
+  
+  p {
+    margin: 5px 0;
+    font-size: 14px;
+    color: #5f6368;
   }
 }

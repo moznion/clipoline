@@ -14,3 +14,10 @@ export interface UploadData {
   mimeType: string;
   fileExtension: string;
 }
+
+export type Destination = "GoogleDrive" | "NotebookLM";
+
+export interface NotebookInfo {
+  id: string;
+  name: string;
+}

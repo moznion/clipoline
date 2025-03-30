@@ -7,8 +7,17 @@
     "default_popup": "index.html",
     "default_icon": "hello_extensions.png"
   },
-  "permissions": ["activeTab", "scripting", "identity", "storage", "debugger"],
-  "host_permissions": ["https://www.googleapis.com/", "http://*/*", "https://*/*"],
+  "background": {
+    "service_worker": "src/background.ts",
+    "type": "module"
+  },
+  "permissions": ["activeTab", "scripting", "identity", "storage", "debugger", "tabs"],
+  "host_permissions": [
+    "https://www.googleapis.com/",
+    "http://*/*",
+    "https://*/*",
+    "https://notebooklm.google.com/*"
+  ],
   "oauth2": {
     "client_id": "647914624947-iui3dbthk4rm74freuqi38fvj95lpjbk.apps.googleusercontent.com",
     "scopes": ["https://www.googleapis.com/auth/drive.file"]
