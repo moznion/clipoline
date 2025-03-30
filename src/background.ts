@@ -71,7 +71,7 @@ async function fetchDataFromNotebookLM(tabId: number): Promise<NotebookInfo[]> {
           const elements = document.getElementsByClassName("project-button-title");
           return Array.from(elements).map((el) => {
             return {
-              id: el.id,
+              id: el.id.replace(/-title$/, ''),
               name: (el as HTMLElement).innerText,
             };
           });
