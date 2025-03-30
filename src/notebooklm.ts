@@ -25,30 +25,12 @@ export async function fetchNotebooksList(): Promise<NotebookInfo[]> {
 
 export async function uploadToNotebookLM(notebookId: string, data: UploadData): Promise<string> {
   try {
-    // Convert the blob to text for sending to the background script
-    const contentText = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsText(data.data);
-    });
-
-    // Create a simplified version of the data to send to the background script
-    const uploadData = {
-      title: data.pageData.title || "Clipped content",
-      content: contentText,
-      url: data.pageData.url,
-      mimeType: data.mimeType,
-      fileExtension: data.fileExtension,
-    };
-
-    // Send to background script
     return new Promise((resolve, reject) => {
       chrome.runtime.sendMessage(
         {
           action: "uploadToNotebook",
           notebookId,
-          data: uploadData,
+          data: data.pageData.content,
         },
         (response) => {
           if (chrome.runtime.lastError) {
