@@ -10,16 +10,10 @@ import { transformToMarkdownContent } from "./transformers/markdown_transformer"
 
 type FileFormat = "text" | "markdown" | "pdf";
 
-interface AuthToken {
-  token: string;
-  softExpiration: number;
-}
-
 const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadSuccess, setUploadSuccess] = useState<boolean>(false);
-  const [authToken, setAuthToken] = useState<AuthToken | null>(null);
   const [fileFormat, setFileFormat] = useState<FileFormat>("markdown");
   const [destination, setDestination] = useState<Destination>("GoogleDrive");
   const [notebooks, setNotebooks] = useState<NotebookInfo[]>([]);
@@ -40,11 +34,6 @@ const App: React.FC = () => {
 
   const authenticate = (): Promise<string> => {
     return new Promise((resolve, reject) => {
-      if (authToken && authToken.softExpiration <= new Date().getTime()) {
-        resolve(authToken.token);
-        return;
-      }
-
       chrome.identity.getAuthToken({ interactive: true }, (token) => {
         if (chrome.runtime.lastError) {
           reject(chrome.runtime.lastError);
@@ -55,16 +44,6 @@ const App: React.FC = () => {
           reject(new Error("Failed to get auth token"));
           return;
         }
-
-        const newAuthToken: AuthToken = {
-          token: token as string,
-          softExpiration: new Date().getTime() + 3600000, // expires in 1 hour
-        };
-
-        setAuthToken(newAuthToken);
-        chrome.storage.local.set({
-          authToken: newAuthToken,
-        });
 
         resolve(token as string);
       });
@@ -238,46 +217,38 @@ const App: React.FC = () => {
     }
   };
 
-  // Load auth token from storage on component mount
-  useEffect(() => {
-    chrome.storage?.local.get(["authToken"], (result) => {
-      // biome-ignore lint/complexity/useLiteralKeys: <explanation>
-      if (result["authToken"]) {
-        // biome-ignore lint/complexity/useLiteralKeys: <explanation>
-        setAuthToken(result["authToken"] as AuthToken);
-      }
-    });
-  }, []);
-
   return (
     <div className="container">
       <h1>Clipoline</h1>
 
       <div className="format-selector">
-        <button
-          type="button"
-          className={`format-chip ${fileFormat === "markdown" ? "selected" : ""}`}
-          onClick={() => setFileFormat("markdown")}
-          aria-pressed={fileFormat === "markdown"}
-        >
-          Markdown
-        </button>
-        <button
-          type="button"
-          className={`format-chip ${fileFormat === "text" ? "selected" : ""}`}
-          onClick={() => setFileFormat("text")}
-          aria-pressed={fileFormat === "text"}
-        >
-          Plain Text
-        </button>
-        <button
-          type="button"
-          className={`format-chip ${fileFormat === "pdf" ? "selected" : ""}`}
-          onClick={() => setFileFormat("pdf")}
-          aria-pressed={fileFormat === "pdf"}
-        >
-          PDF
-        </button>
+        <h3>File Format</h3>
+        <div className="format-row">
+          <button
+            type="button"
+            className={`format-chip ${fileFormat === "markdown" ? "selected" : ""}`}
+            onClick={() => setFileFormat("markdown")}
+            aria-pressed={fileFormat === "markdown"}
+          >
+            Markdown
+          </button>
+          <button
+            type="button"
+            className={`format-chip ${fileFormat === "text" ? "selected" : ""}`}
+            onClick={() => setFileFormat("text")}
+            aria-pressed={fileFormat === "text"}
+          >
+            Plain Text
+          </button>
+          <button
+            type="button"
+            className={`format-chip ${fileFormat === "pdf" ? "selected" : ""}`}
+            onClick={() => setFileFormat("pdf")}
+            aria-pressed={fileFormat === "pdf"}
+          >
+            PDF
+          </button>
+        </div>
       </div>
 
       <div className="destination-selector">
