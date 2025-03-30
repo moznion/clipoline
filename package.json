@@ -4,8 +4,9 @@
   "description": "A Chrome extension that captures web pages in various formats and sends them to different destinations.",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "vite build --watch",
+    "dev": "vite",
     "build": "vite build",
+    "build:watch": "vite build --watch",
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
     "lint": "biome lint .",
