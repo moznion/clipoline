@@ -1,7 +1,7 @@
 // Background service worker for Clipoline extension
 import type { NotebookInfo } from "@/types";
-import { ElementHandle } from "puppeteer-core";
 import {
+  type Browser,
   connect,
   ExtensionTransport,
 } from "puppeteer-core/lib/esm/puppeteer/puppeteer-core-browser.js";
@@ -93,21 +93,29 @@ async function fetchDataFromNotebookLM(tabId: number): Promise<NotebookInfo[]> {
 
 async function uploadToNotebookBackground(notebookId: string, uploadData: string): Promise<void> {
   const tabId = await createTab(`https://notebooklm.google.com/notebook/${notebookId}`, false);
+  let browser: Browser | undefined = undefined;
+
+  const cleanup = async () => {
+    await browser?.disconnect();
+    await chrome.tabs.remove(tabId);
+  };
+
   try {
-    const browser = await connect({
+    browser = await connect({
       transport: await ExtensionTransport.connectTab(tabId),
     });
-    try {
-      const [page] = await browser.pages();
-      if (!page) {
-        throw new Error("failed to open a notebook page");
-      }
-      await page.setViewport({ width: 1280, height: 800 });
-      await chrome.tabs.update(tabId, { active: true });
-      await page.waitForSelector(".add-source-button", { visible: true });
 
-      return new Promise((resolve) => {
-        setTimeout(async () => {
+    const [page] = await browser.pages();
+    if (!page) {
+      throw new Error("failed to open a notebook page");
+    }
+    await page.setViewport({ width: 1280, height: 800 });
+    await chrome.tabs.update(tabId, { active: true });
+    await page.waitForSelector(".add-source-button", { visible: true });
+
+    return new Promise((resolve) => {
+      setTimeout(async () => {
+        try {
           await (await page.$(".add-source-button"))?.click();
 
           const chipGroups = await page.$$(".chip-group .ng-star-inserted");
@@ -121,21 +129,20 @@ async function uploadToNotebookBackground(notebookId: string, uploadData: string
             },
             uploadData,
           );
-          await page.focus('paste-text form textarea');
-          await page.keyboard.type(' ')
+          await page.focus("paste-text form textarea");
+          await page.keyboard.type(" ");
           await page.click('paste-text button[type="submit"]');
           resolve();
-        }, 500);
-      });
-    } finally {
-      // await browser.disconnect();
-    }
+        } finally {
+          await cleanup();
+        }
+      }, 500);
+    });
   } catch (error) {
+    await cleanup();
     throw new Error(
       `Failed to upload to notebook: ${error instanceof Error ? error.message : String(error)}`,
     );
-  } finally {
-    // TODO close tab
   }
 }
 
