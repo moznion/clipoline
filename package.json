@@ -13,7 +13,8 @@
     "lint:fix": "biome lint --write .",
     "format": "biome format --write .",
     "check": "biome check .",
-    "check:fix": "biome check --write ."
+    "check:fix": "biome check --write .",
+    "dist": "pnpm check && pnpm build && zip -r dist.zip dist/"
   },
   "keywords": [],
   "author": "moznion",
