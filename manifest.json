@@ -1,7 +1,7 @@
 {
   "name": "Clipoline",
   "description": "A Chrome extension that captures web pages in various formats and sends them to different destinations.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "manifest_version": 3,
   "action": {
     "default_popup": "index.html",
@@ -16,5 +16,6 @@
   "oauth2": {
     "client_id": "647914624947-iui3dbthk4rm74freuqi38fvj95lpjbk.apps.googleusercontent.com",
     "scopes": ["https://www.googleapis.com/auth/drive.file"]
-  }
+  },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtI7NN3iqgy6Wgd/zDZ2/JGar+14uyY8bGaqXtVCSCkvJJ9SbwDcpDEHQ+MCsXIv1ja1fqhRu7iYdq9Pduh0T3MFO3mcFJSagFanMqr3JIRa9ryNRaRY/FS+PndVOGumDhXIlyJAv2VElo0gOHJUQdIPKKPaY5k3oaROpgN79f7tBxcnTSL7aI0YtsGYxHhStnLHAVDpP2VY+tJm40MJ5ZSglcKIap+Qn6sbwuQsF95J95hyzoRJ4JTA0V/NvGmbRX+RtLz5Q5kCFHdleMuE83YC7P0FTO1QGDa8d1RasF1BHCozbFnWLDHyeAyZ/T3Lro7i/LG6FrdqajBSf7edkqQIDAQAB"
 }
