@@ -28,7 +28,7 @@
     "@types/react": "19.0.12",
     "@types/react-dom": "19.0.4",
     "@types/turndown": "5.0.5",
-    "sass": "1.86.0",
+    "sass": "1.86.3",
     "typescript": "5.8.2",
     "vite": "6.2.3"
   },
