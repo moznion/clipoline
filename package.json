@@ -22,7 +22,7 @@
   "type": "module",
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@crxjs/vite-plugin": "2.0.0-beta.32",
+    "@crxjs/vite-plugin": "2.7.1",
     "@types/chrome": "0.0.313",
     "@types/debug": "^4.1.12",
     "@types/react": "19.0.12",
